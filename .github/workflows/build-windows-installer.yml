@@ -34,6 +34,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: "MSBuild PATH 등록 (node-pty 네이티브 빌드용)"
+        uses: microsoft/setup-msbuild@v2
+
       - name: "의존성 설치 (npm install)"
         run: npm install
 
