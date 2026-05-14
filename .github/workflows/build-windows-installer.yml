@@ -22,6 +22,8 @@ permissions:
 jobs:
   build-windows-installer:
     runs-on: windows-latest
+    env:
+      GYP_MSVS_VERSION: 2022
 
     steps:
       - name: "저장소 체크아웃"
@@ -31,9 +33,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: "Visual Studio Build Tools 버전 지정 (node-pty 네이티브 빌드용)"
-        run: npm config set msvs_version 2022
 
       - name: "의존성 설치 (npm install)"
         run: npm install
