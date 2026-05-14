@@ -45,6 +45,9 @@ jobs:
           arch: amd64
           vsversion: '2022'
 
+      - name: "Python setuptools 설치 (distutils 대체, Python 3.12 호환)"
+        run: pip install setuptools
+
       - name: "의존성 설치 (npm install)"
         run: npm install
 
