@@ -32,6 +32,9 @@ jobs:
         with:
           node-version: '20'
 
+      - name: "Visual Studio Build Tools 버전 지정 (node-pty 네이티브 빌드용)"
+        run: npm config set msvs_version 2022
+
       - name: "의존성 설치 (npm install)"
         run: npm install
 
