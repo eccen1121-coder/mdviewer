@@ -1,0 +1,132 @@
+/* ===== Mona Sans VF (GitHub 공식 폰트, Latin) ===== */
+@font-face {
+  font-family: 'Mona Sans';
+  src: url('MonaSansVF.woff2') format('woff2 supports variations'),
+       url('MonaSansVF.woff2') format('woff2-variations');
+  font-weight: 200 900;
+  font-stretch: 75% 125%;
+  font-style: normal;
+  font-display: swap;
+  font-optical-sizing: auto;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122,
+    U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ===== Noto Sans KR (한국어) ===== */
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('NotoSansKR.0.woff2') format('woff2');
+  unicode-range: U+f004-f005,U+f007,U+f010-f011,U+f013-f015,U+f017-f019,U+f01b-f01c,U+f01e,U+f021,U+f023,U+f025-f026,U+f028-f02a,U+f02c-f02d,U+f030-f031,U+f034-f035,U+f037-f038,U+f03a-f03b,U+f03d,U+f03e,U+f040-f041,U+f043,U+f045-f047,U+f04a-f04e,U+f050-f051,U+f053-f054,U+f057-f059,U+f05b,U+f05d-f05e,U+f060-f063,U+f065-f06a,U+f06d,U+f06f-f070,U+f072-f073,U+f075,U+f077-f078,U+f07a-f07b,U+f07c-f07e,U+f080,U+f082-f083,U+f085-f086,U+f089,U+f08b,U+f08d-f08e,U+f090-f091,U+f093-f094,U+f096-f097,U+f099-f09b,U+f09d-f09e,U+f0a0,U+f0a2-f0a3,U+f0a5-f0a6,U+f0a8-f0ab,U+f0ad-f0ae,U+f0b0-f0b2,U+f0b4,U+f0b6-f0b7,U+f0c0-f0c3,U+f0c5-f0c8,U+f0ca-f0cb,U+f0cd-f0ce,U+f0d0-f0d3,U+f0d5-f0d8,U+f0da-f0db,U+f0dd-f0de,U+f0e0-f0e1,U+f0e3,U+f0e7-f0e8,U+f0ea-f0eb,U+f0ee-f0ef,U+f0f1-f0f3,U+f0f5-f0f6,U+f0f8-f0fb,U+f0fd-f0fe;
+}
+
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('NotoSansKR.1.woff2') format('woff2');
+  unicode-range: U+AC00-D7A3;
+}
+
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('NotoSansKR.2.woff2') format('woff2');
+  unicode-range: U+1100-11FF,U+302E-302F,U+3131-318E,U+3200-321E,U+3260-327E,U+A960-A97C,U+D7B0-D7C6,U+D7CB-D7FB;
+}
+
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('NotoSansKR.3.woff2') format('woff2');
+  unicode-range: U+0370-03FF,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('NotoSansKR.4.woff2') format('woff2');
+  unicode-range: U+1F004,U+1F0CF,U+1F3FB-1F3FF,U+1F9B0-1F9B3,U+E0100-E01EF,U+200D,U+20E3,U+FE0F;
+}
+
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('NotoSansKR.5.woff2') format('woff2');
+  unicode-range: U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+}
+
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('NotoSansKR.6.woff2') format('woff2');
+  unicode-range: U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20CF,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('NotoSansKR.7.woff2') format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('NotoSansKR.8.woff2') format('woff2');
+  unicode-range: U+2E80-2EFF,U+3000-303F,U+3040-309F,U+30A0-30FF,U+31F0-31FF,U+3400-4DBF,U+4E00-9FFF,U+A000-A4CF,U+F900-FAFF,U+FE30-FE4F;
+}
+
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('NotoSansKR.9.woff2') format('woff2');
+  unicode-range: U+2600-26FF,U+2700-27BF,U+1F300-1F5FF,U+1F600-1F64F,U+1F680-1F6FF,U+1F700-1F77F;
+}
+
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('NotoSansKR.10.woff2') format('woff2');
+  unicode-range: U+0250-02AF,U+1D00-1D2E,U+1D30-1D5F,U+1D62-1D65,U+1D6B-1D77,U+1D79-1DBE,U+1DC0-1DFF,U+2C60-2C7F;
+}
+
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('NotoSansKR.11.woff2') format('woff2');
+  unicode-range: U+0460-052F,U+1C80-1C88,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+
+@font-face {
+  font-family: 'Noto Sans KR';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('NotoSansKR.12.woff2') format('woff2');
+  unicode-range: U+1F1E0-1F1FF;
+}

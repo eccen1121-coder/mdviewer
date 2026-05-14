@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file:; font-src 'self' data:;">
+  <title>MDViewer</title>
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" id="hljs-theme" href="vendor/github.min.css">
+  <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css">
+</head>
+<body>
+  <script>
+    (() => {
+      const body = document.body;
+      if (!body) return;
+      let isDarkMode = false;
+      try {
+        isDarkMode = localStorage.getItem('darkMode') === 'true';
+      } catch (err) {}
+      body.classList.add(isDarkMode ? 'dark-mode' : 'light-mode');
+      const hljsTheme = document.getElementById('hljs-theme');
+      if (hljsTheme) {
+        hljsTheme.href = isDarkMode ? 'vendor/github-dark.min.css' : 'vendor/github.min.css';
+      }
+    })();
+  </script>
+
+  <div class="boot-overlay" id="boot-overlay" aria-hidden="true">
+    <div class="boot-message">
+      <p class="boot-line" id="boot-line-1"></p>
+      <p class="boot-line" id="boot-line-2"></p>
+    </div>
+  </div>
+
+  <!-- 타이틀바 -->
+  <div class="titlebar">
+    <div class="titlebar-drag-region"></div>
+    <div class="titlebar-title">
+      <span class="app-icon">📄</span>
+      <span id="titlebar-filename">MDViewer</span>
+    </div>
+    <div class="titlebar-actions">
+      <!-- 언어 선택 -->
+      <div class="lang-selector" id="lang-selector">
+        <button class="btn-icon btn-lang" id="btn-lang" title="언어 선택">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <span id="lang-label" style="display:none;">KO</span>
+        </button>
+        <div class="lang-dropdown" id="lang-dropdown" style="display:none;">
+          <button class="lang-option active" data-lang="ko">🇰🇷 한국어</button>
+          <button class="lang-option" data-lang="en">🇺🇸 English</button>
+        </div>
+      </div>
+      <!-- 정보 버튼 (인포메이션 아이콘) -->
+      <button class="btn-icon" id="btn-about" title="MDViewer 정보">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <circle cx="12" cy="8" r="0.5" fill="currentColor" stroke="currentColor" stroke-width="1"/>
+        </svg>
+      </button>
+      <!-- 다크 모드 -->
+      <button class="btn-icon" id="btn-dark-mode" title="다크 모드 (⌘⇧D)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 메인 레이아웃 -->
+  <div class="app-layout">
+
+    <!-- 사이드바 -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="folder-toolbar">
+          <button class="btn-folder-nav" id="btn-folder-back" title="이전 폴더">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <button class="btn-folder-nav" id="btn-folder-forward" title="다음 폴더">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+          <button class="btn-open-folder" id="btn-open-folder">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span data-i18n="openFolder">폴더 열기</span>
+          </button>
+        </div>
+        <span class="folder-name" id="folder-name" data-i18n-placeholder="selectFolder">폴더를 선택하세요</span>
+      </div>
+
+      <!-- 사이드바 고정 검색창 -->
+      <div class="sidebar-search" id="sidebar-search">
+        <div class="sidebar-search-wrap">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input type="text" id="search-input" placeholder="파일 내용 검색..." data-i18n-placeholder="searchPlaceholder" />
+          <button class="btn-clear-search" id="btn-clear-search" style="display:none;">✕</button>
+        </div>
+        <div class="search-results" id="search-results"></div>
+      </div>
+
+      <!-- 드래그 가능한 섹션 컨테이너 -->
+      <div class="sidebar-sections" id="sidebar-sections">
+
+      <!-- 위치 섹션 -->
+      <div class="sidebar-section" id="section-locations" data-section="locations">
+        <div class="section-header" id="locations-header">
+          <span class="drag-handle" title="순서 변경">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+              <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+              <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+            </svg>
+          </span>
+          <span class="section-chevron open" id="locations-chevron">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+            <path d="M12 2v20"/>
+            <path d="M2 12h20"/>
+            <circle cx="12" cy="12" r="9"/>
+          </svg>
+          <span data-i18n="locations">위치</span>
+          <button class="section-action-btn" id="btn-refresh-locations" title="위치 새로고침">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 2v6h-6"/>
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+              <path d="M3 22v-6h6"/>
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+            </svg>
+          </button>
+        </div>
+        <div class="locations-list open" id="locations-list">
+          <div class="favorites-empty"><span data-i18n="noLocations">위치를 불러오는 중입니다</span></div>
+        </div>
+      </div>
+
+      <!-- 최근 본 파일 섹션 -->
+      <div class="sidebar-section" id="section-recent" data-section="recent">
+        <div class="section-header" id="recent-header">
+          <span class="drag-handle" title="순서 변경">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+              <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+              <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+            </svg>
+          </span>
+          <span class="section-chevron" id="recent-chevron">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span data-i18n="recentFiles">최근 본 파일</span>
+        </div>
+        <div class="recent-list" id="recent-list">
+          <div class="favorites-empty"><span data-i18n="noRecentFiles">최근 본 파일이 없습니다</span></div>
+        </div>
+      </div>
+
+      <!-- 즐겨찾기 섹션 -->
+      <div class="sidebar-section" id="section-favorites" data-section="favorites">
+        <div class="section-header" id="favorites-header">
+          <span class="drag-handle" title="순서 변경">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+              <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+              <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+            </svg>
+          </span>
+          <span class="section-chevron" id="favorites-chevron">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none" class="section-icon star-icon">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          <span data-i18n="favorites">즐겨찾기</span>
+          <button class="section-action-btn" id="btn-favorites-sort" title="즐겨찾기 정렬">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 5h10"/>
+              <path d="M11 12h7"/>
+              <path d="M11 19h4"/>
+              <path d="M4 4v16"/>
+              <path d="M2 18l2 2 2-2"/>
+            </svg>
+          </button>
+        </div>
+        <div class="favorites-list" id="favorites-list">
+          <div class="favorites-empty" id="favorites-empty">
+            <span data-i18n="noFavorites">즐겨찾기가 없습니다</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 메모 -->
+      <div class="sidebar-section" id="section-memos" data-section="memos">
+        <div class="section-header" id="memos-header">
+          <span class="drag-handle" title="순서 변경">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+              <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+              <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+            </svg>
+          </span>
+          <span class="section-chevron" id="memos-chevron">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span data-i18n="memos">메모</span>
+          <span class="section-total-count" id="memos-count-badge" style="display:none"></span>
+        </div>
+        <div class="memos-section-list" id="memos-section-list"></div>
+      </div>
+
+      <!-- 파일 트리 -->
+      <div class="sidebar-section file-tree-section" id="section-filetree" data-section="filetree">
+        <div class="section-header" id="filetree-header">
+          <span class="drag-handle" title="순서 변경">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+              <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+              <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+            </svg>
+          </span>
+          <span id="filetree-chevron" class="section-chevron open">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span data-i18n="fileExplorer">파일 탐색기</span>
+          <button class="section-action-btn" id="btn-refresh-folder" title="폴더 새로고침">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 2v6h-6"/>
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+              <path d="M3 22v-6h6"/>
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+            </svg>
+          </button>
+        </div>
+        <div class="file-tree" id="file-tree">
+          <div class="empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+            <p data-i18n="openFolderHint">폴더를 열어<br>Markdown/HTML 파일을 탐색하세요</p>
+          </div>
+        </div>
+      </div>
+
+      </div><!-- /.sidebar-sections -->
+    </div>
+    <!-- 리사이즈 핸들 -->
+    <div class="resize-handle" id="resize-handle"></div>
+
+    <!-- 에디터 영역 -->
+    <div class="editor-area" id="editor-area">
+
+      <!-- 탭 바 -->
+      <div class="tab-bar" id="tab-bar">
+        <div class="tabs-list" id="tabs-list"></div>
+        <div class="tab-bar-actions">
+          <div class="panel-toggle-group" id="panel-toggle-group">
+            <button class="panel-toggle-btn active" id="btn-toggle-editor" data-panel-toggle="editor" data-i18n="edit" title="편집">편집</button>
+            <button class="panel-toggle-btn active" id="btn-toggle-preview" data-panel-toggle="preview" data-i18n="preview" title="미리보기">미리보기</button>
+            <button class="panel-toggle-btn" id="btn-toggle-terminal" data-panel-toggle="terminal" data-i18n="terminal" title="터미널">터미널</button>
+          </div>
+          <button class="btn-icon btn-close-all-tabs" id="btn-close-all-tabs" title="전체 탭 닫기">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18"/>
+              <path d="M8 6V4h8v2"/>
+              <path d="M19 6l-1 14H6L5 6"/>
+              <path d="M10 11l4 4"/>
+              <path d="M14 11l-4 4"/>
+            </svg>
+          </button>
+          <button class="btn-icon btn-view-toggle" id="btn-view-toggle" title="보기 전환">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="8" height="18" rx="1"/><rect x="13" y="3" width="8" height="18" rx="1"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 에디터 + 미리보기 컨테이너 -->
+      <div class="editor-preview-container" id="editor-preview-container">
+
+        <!-- 에디터 패널 -->
+        <div class="editor-panel workspace-panel" id="editor-panel" data-panel-key="editor">
+          <div class="panel-header" id="editor-panel-header">
+            <span class="panel-drag-handle" title="드래그하여 패널 순서 변경">
+              <svg width="10" height="14" viewBox="0 0 10 16" fill="currentColor" style="opacity:0.4">
+                <circle cx="3" cy="3" r="1.5"/><circle cx="7" cy="3" r="1.5"/>
+                <circle cx="3" cy="8" r="1.5"/><circle cx="7" cy="8" r="1.5"/>
+                <circle cx="3" cy="13" r="1.5"/><circle cx="7" cy="13" r="1.5"/>
+              </svg>
+            </span>
+            <span data-i18n="edit">편집</span>
+            <div class="panel-header-actions">
+              <div class="panel-pinned-actions" id="editor-pinned-actions"></div>
+              <button class="btn-panel-action btn-panel-detach" id="btn-detach-editor" title="새 창으로 열기">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 3h7v7"/>
+                  <path d="M21 3l-9 9"/>
+                  <path d="M5 7v12h12"/>
+                </svg>
+                <span data-i18n="detachPanel">새 창</span>
+              </button>
+              <div class="panel-actions-menu">
+                <button class="btn-panel-action btn-panel-menu-toggle" id="btn-editor-actions-menu" title="패널 메뉴" aria-haspopup="true" aria-expanded="false">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                  </svg>
+                </button>
+                <div class="panel-actions-dropdown" id="editor-actions-dropdown" style="display:none;">
+                  <button class="btn-panel-action panel-dropdown-item" id="btn-copy-all" title="전문 복사 (⌘⇧C)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <span data-i18n="copyAll">전문 복사</span>
+                  </button>
+                  <button class="btn-panel-action panel-dropdown-item" id="btn-refresh-file" title="현재 파일 새로고침">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 2v6h-6"/>
+                      <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+                      <path d="M3 22v-6h6"/>
+                      <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+                    </svg>
+                    <span data-i18n="refreshFile">새로고침</span>
+                  </button>
+                  <button class="btn-panel-action panel-dropdown-item btn-disabled" id="btn-undo" title="실행 취소 (⌘Z)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                    </svg>
+                    <span data-i18n="undo">실행 취소</span>
+                  </button>
+                  <button class="btn-panel-action panel-dropdown-item btn-disabled" id="btn-redo" title="다시 실행 (⌘⇧Z)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/>
+                    </svg>
+                    <span data-i18n="redo">다시 실행</span>
+                  </button>
+                  <button class="btn-panel-action panel-dropdown-item btn-save" id="btn-save" title="저장 (⌘S)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                      <polyline points="17 21 17 13 7 13 7 21"/>
+                      <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    <span data-i18n="save">저장</span>
+                  </button>
+                  <button class="btn-panel-action panel-dropdown-item btn-save-md" id="btn-save-home-md" title="MD 파일로 저장" style="display:none">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                      <polyline points="17 21 17 13 7 13 7 21"/>
+                      <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    <span data-i18n="saveAsMd">MD로 저장</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <textarea id="editor" spellcheck="false" placeholder="Markdown을 입력하세요..."></textarea>
+        </div>
+
+        <!-- 패널 리사이즈 핸들 -->
+        <div class="panel-resize-handle panel-split-handle" id="panel-resize-handle" data-split-index="0"></div>
+
+        <!-- 미리보기 패널 -->
+        <div class="preview-panel workspace-panel" id="preview-panel" data-panel-key="preview">
+          <div class="panel-header" id="preview-panel-header">
+            <span class="panel-drag-handle" title="드래그하여 패널 순서 변경">
+              <svg width="10" height="14" viewBox="0 0 10 16" fill="currentColor" style="opacity:0.4">
+                <circle cx="3" cy="3" r="1.5"/><circle cx="7" cy="3" r="1.5"/>
+                <circle cx="3" cy="8" r="1.5"/><circle cx="7" cy="8" r="1.5"/>
+                <circle cx="3" cy="13" r="1.5"/><circle cx="7" cy="13" r="1.5"/>
+              </svg>
+            </span>
+            <span data-i18n="preview">미리보기</span>
+            <div class="panel-header-actions">
+              <div class="panel-pinned-actions" id="preview-pinned-actions"></div>
+              <button class="btn-panel-action btn-panel-detach" id="btn-detach-preview" title="새 창으로 열기">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 3h7v7"/>
+                  <path d="M21 3l-9 9"/>
+                  <path d="M5 7v12h12"/>
+                </svg>
+                <span data-i18n="detachPanel">새 창</span>
+              </button>
+              <div class="panel-actions-menu">
+                <button class="btn-panel-action btn-panel-menu-toggle" id="btn-preview-actions-menu" title="패널 메뉴" aria-haspopup="true" aria-expanded="false">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                  </svg>
+                </button>
+                <div class="panel-actions-dropdown" id="preview-actions-dropdown" style="display:none;">
+                  <button class="btn-panel-action panel-dropdown-item" id="btn-reveal-in-tree" title="파일 탐색기에서 위치 보기" style="display:none">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <span data-i18n="revealInTree">위치 보기</span>
+                  </button>
+                  <button class="btn-panel-action panel-dropdown-item" id="btn-fav-current" title="즐겨찾기 추가" style="display:none">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="btn-fav-current-icon">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    <span id="btn-fav-current-label" data-i18n="addFavorite">즐겨찾기</span>
+                  </button>
+                  <button class="btn-panel-action panel-dropdown-item" id="btn-apply-memos" title="메모 본문 적용">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      <path d="M8 9h8"/>
+                      <path d="M8 13h6"/>
+                    </svg>
+                    <span data-i18n="applyMemos">본문 적용</span>
+                  </button>
+                  <button class="btn-panel-action panel-dropdown-item" id="btn-export-memos" title="메모 내보내기 (⌘⇧E)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    <span data-i18n="exportMemos">메모 내보내기</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="preview-content" id="preview-content">
+            <div class="welcome-screen">
+              <div class="welcome-icon">📄</div>
+              <h2>MDViewer</h2>
+              <p data-i18n="welcomeDesc">GitHub 스타일 Markdown 뷰어</p>
+              <ul class="welcome-features">
+                <li data-i18n="feat1">📁 폴더 탐색기 (깊은 폴더 지원)</li>
+                <li data-i18n="feat2">⭐ 즐겨찾기</li>
+                <li data-i18n="feat3">✏️ 실시간 편집 + 미리보기</li>
+                <li data-i18n="feat4">💬 줄 단위 메모</li>
+                <li data-i18n="feat5">🔍 파일 내용 검색</li>
+                <li data-i18n="feat6">🌙 다크 모드</li>
+              </ul>
+              <button class="btn-welcome-open" id="btn-welcome-open" data-i18n="openFolder">폴더 열기</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-resize-handle panel-split-handle" id="panel-resize-handle-preview" data-split-index="1" style="display:none;"></div>
+
+        <!-- 터미널 패널 -->
+        <div class="terminal-panel workspace-panel hidden" id="terminal-panel" data-panel-key="terminal">
+          <div class="panel-header" id="terminal-panel-header">
+            <span class="panel-drag-handle" title="드래그하여 패널 순서 변경">
+              <svg width="10" height="14" viewBox="0 0 10 16" fill="currentColor" style="opacity:0.4">
+                <circle cx="3" cy="3" r="1.5"/><circle cx="7" cy="3" r="1.5"/>
+                <circle cx="3" cy="8" r="1.5"/><circle cx="7" cy="8" r="1.5"/>
+                <circle cx="3" cy="13" r="1.5"/><circle cx="7" cy="13" r="1.5"/>
+              </svg>
+            </span>
+            <span data-i18n="terminal">터미널</span>
+            <div class="panel-header-actions">
+              <div class="panel-pinned-actions" id="terminal-pinned-actions"></div>
+              <button class="btn-panel-action btn-panel-detach" id="btn-detach-terminal" title="새 창으로 열기">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 3h7v7"/>
+                  <path d="M21 3l-9 9"/>
+                  <path d="M5 7v12h12"/>
+                </svg>
+                <span data-i18n="detachPanel">새 창</span>
+              </button>
+              <div class="panel-actions-menu">
+                <button class="btn-panel-action btn-panel-menu-toggle" id="btn-terminal-actions-menu" title="패널 메뉴" aria-haspopup="true" aria-expanded="false">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                  </svg>
+                </button>
+                <div class="panel-actions-dropdown" id="terminal-actions-dropdown" style="display:none;">
+                  <button class="btn-panel-action panel-dropdown-item" id="btn-terminal-copy" title="선택 복사">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <span data-i18n="copy">복사</span>
+                  </button>
+                  <button class="btn-panel-action panel-dropdown-item" id="btn-terminal-insert-file" title="파일 경로 삽입">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <path d="M14 2v6h6"/>
+                    </svg>
+                    <span data-i18n="insertFile">파일 삽입</span>
+                  </button>
+                  <button class="btn-panel-action panel-dropdown-item" id="btn-terminal-insert-folder" title="폴더 경로 삽입">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span data-i18n="insertFolder">폴더 삽입</span>
+                  </button>
+                  <button class="btn-panel-action panel-dropdown-item" id="btn-terminal-paste" title="텍스트 삽입">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                      <rect x="8" y="2" width="8" height="4" rx="1"/>
+                      <path d="M9 12h6"/>
+                      <path d="M9 16h6"/>
+                    </svg>
+                    <span data-i18n="terminalPaste">텍스트 삽입</span>
+                  </button>
+                  <button class="btn-panel-action panel-dropdown-item" id="btn-terminal-restart" title="현재 경로에서 터미널 재시작">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 2v6h-6"/>
+                      <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+                      <path d="M3 22v-6h6"/>
+                      <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+                    </svg>
+                    <span data-i18n="terminalRestart">재시작</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="terminal-container" id="terminal-container">
+            <div class="terminal-empty" id="terminal-empty" data-i18n="terminalHint">터미널 패널을 열면 현재 경로에서 zsh가 시작됩니다</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 상태바 -->
+      <div class="status-bar" id="status-bar">
+        <span class="status-path-wrap" id="status-path-wrap">
+          <span id="status-path"></span>
+          <button class="btn-copy-path" id="btn-copy-path" title="경로 복사" style="display:none;">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M3 11H2.5A1.5 1.5 0 0 1 1 9.5v-7A1.5 1.5 0 0 1 2.5 1h7A1.5 1.5 0 0 1 11 2.5V3" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </button>
+        </span>
+        <span id="status-info"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메모 패널 (오버레이) -->
+  <div class="memo-panel" id="memo-panel" style="display:none;">
+    <div class="memo-panel-header">
+      <span class="memo-panel-title" id="memo-panel-title" data-i18n="lineMemo">줄 메모</span>
+      <button class="memo-panel-close" id="memo-panel-close">✕</button>
+    </div>
+    <div class="memo-panel-body">
+          <textarea id="memo-textarea" placeholder="이 줄에 대한 메모를 입력하세요..." data-i18n-placeholder="memoPlaceholder" rows="5"></textarea>
+    </div>
+    <div class="memo-panel-footer">
+      <button class="btn-memo-save" id="btn-memo-save" data-i18n="save">저장</button>
+      <button class="btn-memo-delete" id="btn-memo-delete" data-i18n="delete">삭제</button>
+    </div>
+  </div>
+
+  <!-- 이름 변경 모달 -->
+  <div class="modal-overlay" id="rename-modal" style="display:none;">
+    <div class="rename-modal">
+      <div class="rename-modal-header">
+          <span class="rename-modal-title" data-i18n="rename">이름 변경</span>
+        <button class="rename-modal-close" id="rename-modal-close">✕</button>
+      </div>
+      <div class="rename-modal-body">
+          <input type="text" id="rename-input" class="rename-input" placeholder="새 이름 입력..." data-i18n-placeholder="renameInputPlaceholder" />
+      </div>
+      <div class="rename-modal-footer">
+          <button class="btn-rename-cancel" id="btn-rename-cancel" data-i18n="cancel">취소</button>
+          <button class="btn-rename-confirm" id="btn-rename-confirm" data-i18n="confirm">변경</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="terminal-paste-modal" style="display:none;">
+    <div class="terminal-paste-modal">
+      <div class="rename-modal-header">
+        <span class="rename-modal-title" data-i18n="terminalPaste">텍스트 삽입</span>
+        <button class="rename-modal-close" id="terminal-paste-close">✕</button>
+      </div>
+      <div class="rename-modal-body">
+        <textarea id="terminal-paste-input" class="terminal-paste-input" placeholder="여기에 붙여넣고 터미널로 보냅니다" data-i18n-placeholder="terminalPastePlaceholder" rows="8"></textarea>
+      </div>
+      <div class="rename-modal-footer">
+        <button class="btn-rename-cancel" id="btn-terminal-paste-cancel" data-i18n="cancel">취소</button>
+        <button class="btn-rename-confirm" id="btn-terminal-paste-confirm" data-i18n="insert">삽입</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="panel-actions-config-modal" style="display:none;">
+    <div class="rename-modal">
+      <div class="rename-modal-header">
+        <span class="rename-modal-title" id="panel-actions-config-title">헤더 버튼 구성</span>
+        <button class="rename-modal-close" id="panel-actions-config-close">✕</button>
+      </div>
+      <div class="rename-modal-body" id="panel-actions-config-body"></div>
+      <div class="rename-modal-footer">
+        <button class="btn-rename-cancel" id="panel-actions-config-cancel" data-i18n="cancel">취소</button>
+        <button class="btn-rename-confirm" id="panel-actions-config-confirm" data-i18n="confirm">확인</button>
+      </div>
+    </div>
+  </div>
+  <!-- 아이템 정보 모달 -->
+  <div class="modal-overlay" id="item-info-modal" style="display:none;">
+    <div class="item-info-modal">
+      <div class="item-info-header">
+          <span class="item-info-title" id="item-info-title" data-i18n="info">정보</span>
+        <button class="item-info-close" id="item-info-close">✕</button>
+      </div>
+      <div class="item-info-body" id="item-info-body"></div>
+    </div>
+  </div>
+  <!-- About 모달 -->
+  <div class="modal-overlay" id="about-modal" style="display:none;">
+    <div class="about-modal">
+      <button class="about-close" id="about-close">✕</button>
+      <div class="about-icon">📄</div>
+      <h2 class="about-title">MDViewer</h2>
+      <p class="about-version" id="about-version">Version</p>
+      <p class="about-desc">A Markdown viewer and editor built for AI Agent Managers —<br>view, edit, and manage your MD files with ease.</p>
+      <div class="about-divider"></div>
+      <div class="about-info">
+        <div class="about-info-row">
+          <span class="about-info-label" data-i18n="createdAt">제작일</span>
+          <span class="about-info-value">2025년 4월 5일</span>
+        </div>
+        <div class="about-info-row">
+          <span class="about-info-label" data-i18n="updatedAt">업데이트일</span>
+          <span class="about-info-value" id="about-updated">2025년 4월 5일</span>
+        </div>
+      </div>
+      <div class="about-divider"></div>
+      <div class="about-author">
+        <p class="about-author-name">HSF</p>
+        <a class="about-author-email" href="mailto:product-dev@homestudioframer.com">product-dev@homestudioframer.com</a>
+        <p class="about-author-location">Based in Seoul, South Korea</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 -->
+  <div class="toast" id="toast"></div>
+
+  <script src="../node_modules/marked/marked.min.js"></script>
+  <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+  <script src="vendor/highlight.min.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
