@@ -1,5 +1,10 @@
 # MDViewer Windows 인스톨러 자동 빌드
 #
+# [원인 분석 - 2026-05-15]
+#   - windows-latest가 VS2026 기반 Windows Server 2025로 전환 중 (2026-06-08~15)
+#   - node-gyp이 VS2026(18.x) 인식 실패 → "Could not find any Visual Studio" 오류
+#   - 해결: windows-2022 고정 + ilammy/msvc-dev-cmd로 MSVC 전체 환경 주입
+#
 # 실행 조건
 #   1. 버전 태그 push 시 자동 (예: git tag v1.4.0 && git push origin v1.4.0)
 #   2. GitHub Actions 탭 > 이 워크플로우 선택 > Run workflow 버튼으로 수동 실행
@@ -21,7 +26,7 @@ permissions:
 
 jobs:
   build-windows-installer:
-    runs-on: windows-latest
+    runs-on: windows-2022
     env:
       GYP_MSVS_VERSION: 2022
 
@@ -34,8 +39,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: "MSBuild PATH 등록 (node-pty 네이티브 빌드용)"
-        uses: microsoft/setup-msbuild@v2
+      - name: "MSVC 개발자 환경 설정 (node-pty 네이티브 빌드용)"
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+          vsversion: '2022'
 
       - name: "의존성 설치 (npm install)"
         run: npm install
